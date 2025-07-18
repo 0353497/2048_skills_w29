@@ -2,17 +2,14 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:the_modern_edition_2048/components/game_background.dart';
 import 'package:the_modern_edition_2048/components/game_over_dialog.dart';
 import 'package:the_modern_edition_2048/components/score_container.dart';
 import 'package:the_modern_edition_2048/homepage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:the_modern_edition_2048/models/swipe_direction_model.dart';
+import 'package:the_modern_edition_2048/models/tile_model.dart';
 
-enum SwipeDirection {
-  up,
-  down,
-  left,
-  right,
-}
 
 class GamePage extends StatefulWidget {
   const GamePage({super.key, this.isLastGame = false});
@@ -22,7 +19,6 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-
   List<List<int>> game = [
     [0, 0, 0, 0],
     [0, 0, 0, 0],
@@ -30,10 +26,16 @@ class _GamePageState extends State<GamePage> {
     [0, 0, 0, 0]
   ];
   List<List<List<int>>> gameStates = [];
+  List<TileModel> tiles = [];
+  int nextTileId = 0;
   bool isGameOver = false;
   int currentScore = 0;
   int highScore = 0;
 
+  final int gridSize = 4;
+  final double cellSize = 70.0;
+  final double cellSpacing = 10.0;
+  (int, int) lastAddedPosition = (0, 0);
   final Duration _debounceTime = Duration(milliseconds: 400);
   bool _isProcessingSwipe = false;
   late SharedPreferences prefs;
@@ -45,17 +47,58 @@ class _GamePageState extends State<GamePage> {
     setup();
     if (widget.isLastGame) setupLastGame();
   }
+  
+  void _updateTilesList() {
+    Map<String, TileModel> existingTilesByPosition = {};
+    for (var tile in tiles) {
+      existingTilesByPosition["${tile.row}-${tile.col}"] = tile;
+    }
+    
+    List<TileModel> newTiles = [];
+    
+    for (int row = 0; row < game.length; row++) {
+      for (int col = 0; col < game[row].length; col++) {
+        int value = game[row][col];
+        if (value > 0) {
+          String posKey = "$row-$col";
+          if (existingTilesByPosition.containsKey(posKey)) {
+            TileModel existing = existingTilesByPosition[posKey]!;
+            if (existing.value != value) {
+              newTiles.add(existing.copyWith(value: value, isNew: false));
+            } else {
+              newTiles.add(existing.copyWith(isNew: false));
+            }
+          } else {
+            newTiles.add(TileModel(
+              id: "$row-$col-$nextTileId",
+              value: value,
+              row: row,
+              col: col,
+              isNew: true,
+            ));
+            nextTileId++;
+          }
+        }
+      }
+    }
+    
+    setState(() {
+      tiles = newTiles;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
+    double gridWidth = gridSize * cellSize + (gridSize + 1) * cellSpacing;
+    
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Row(
-          spacing: 20,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text("Score: $currentScore", style: TextStyle(fontSize: 16)),
+            SizedBox(width: 20),
             Text("Best: $highScore", style: TextStyle(fontSize: 16)),
           ],
         ),
@@ -83,7 +126,7 @@ class _GamePageState extends State<GamePage> {
           } else if (details.delta.dy > 5) {
             _handleSwipe(SwipeDirection.down);
           }
-          if (details.delta.dx < -5) {
+          else if (details.delta.dx < -5) {
             _handleSwipe(SwipeDirection.left);
           } else if (details.delta.dx > 5) {
             _handleSwipe(SwipeDirection.right);
@@ -98,25 +141,19 @@ class _GamePageState extends State<GamePage> {
         },
         child: SizedBox.expand(
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Center(
+            child: Center(
+              child: SizedBox(
+                width: gridWidth,
+                height: gridWidth,
                 child: Stack(
                   children: [
-                    GridView.count(
-                      physics: NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-                      crossAxisCount: 4,
-                      children: [
-                        for (final rows in game)
-                        ...rows.map(
-                          (number) {
-                            return ScoreContainer(score: number);
-                          }
-                        )
-                      ],
-                      ),
+                    GameBackground(
+                      size: gridSize,
+                      cellSize: cellSize,
+                      cellSpacing: cellSpacing,
+                    ),
+                    
+                    ...getAllCellWidgets(),
                   ],
                 ),
               ),
@@ -124,6 +161,30 @@ class _GamePageState extends State<GamePage> {
           ),
         ),
       ),
+    );
+  }
+
+  List<Widget> getAllCellWidgets() {
+    List<Widget> cells = [];
+    for (var tile in tiles) {
+      cells.add(
+        ScoreContainer(
+          key: ValueKey(tile.id),
+          score: tile.value,
+          position: _calculatePosition(tile.row, tile.col),
+          cellSize: cellSize,
+          isNew: tile.isNew,
+        ),
+      );
+    }
+    
+    return cells;
+  }
+
+  Offset _calculatePosition(int row, int col) {
+    return Offset(
+      col * cellSize + (col + 1) * cellSpacing,
+      row * cellSize + (row + 1) * cellSpacing,
     );
   }
   
@@ -148,6 +209,7 @@ class _GamePageState extends State<GamePage> {
       setState(() {
         currentScore = (currentScore / 2).toInt();
         game = gameStates.removeLast();
+        _updateTilesList();
       });
     }
   }
@@ -175,7 +237,6 @@ class _GamePageState extends State<GamePage> {
         builder: (_)
         => GameOverDialog(currentScore: currentScore, highScore: highScore, undo: undo),
         barrierDismissible: false,
-
         );
       });
       return;
@@ -184,16 +245,25 @@ class _GamePageState extends State<GamePage> {
     final randomNumber = Random().nextInt(10);
     int numberToAdd = 2;
 
-    //10% change
+    // 10% chance of adding a 4 instead of a 2
     if (randomNumber == 0) {
       numberToAdd = 4;
     }
 
     final randomIndex = Random().nextInt(options.length);
     final (int, int) placeToAddNumber = options[randomIndex];
-
+    lastAddedPosition = placeToAddNumber;
     setState(() {
       game[placeToAddNumber.$1][placeToAddNumber.$2] = numberToAdd;
+      
+      tiles.add(TileModel(
+        id: "${placeToAddNumber.$1}-${placeToAddNumber.$2}-$nextTileId",
+        value: numberToAdd,
+        row: placeToAddNumber.$1,
+        col: placeToAddNumber.$2,
+        isNew: true,
+      ));
+      nextTileId++;
     });
   }
 
@@ -226,6 +296,11 @@ class _GamePageState extends State<GamePage> {
   }
   
   void calculateNewPositions(SwipeDirection direction) {
+    Map<String, TileModel> tilesByPosition = {};
+    for (var tile in tiles) {
+      tilesByPosition["${tile.row}-${tile.col}"] = tile;
+    }
+    
     List<List<bool>> merged = List.generate(
       game.length,
       (i) => List.generate(game[i].length, (j) => false)
@@ -233,13 +308,13 @@ class _GamePageState extends State<GamePage> {
     
     List<(int, int)> options = getOptionsWhereNotNull();
     if (direction == SwipeDirection.right) {
-      options.sort((a, b) => b.$1.compareTo(a.$1));
-    } else if (direction == SwipeDirection.down) {
       options.sort((a, b) => b.$2.compareTo(a.$2));
+    } else if (direction == SwipeDirection.down) {
+      options.sort((a, b) => b.$1.compareTo(a.$1));
     } else if (direction == SwipeDirection.left) {
-      options.sort((a, b) => a.$1.compareTo(b.$1));
-    } else if (direction == SwipeDirection.up) {
       options.sort((a, b) => a.$2.compareTo(b.$2));
+    } else if (direction == SwipeDirection.up) {
+      options.sort((a, b) => a.$1.compareTo(b.$1));
     }
 
     for (var option in options) {
@@ -249,22 +324,34 @@ class _GamePageState extends State<GamePage> {
       (int, int) newPos = _moveBlockAsFarAsPossible(option, direction);
       
       if (newPos != option) {
-        setState(() {
+        String oldPosKey = "${option.$1}-${option.$2}";
+        if (tilesByPosition.containsKey(oldPosKey)) {
+          TileModel movingTile = tilesByPosition[oldPosKey]!;
+          tilesByPosition.remove(oldPosKey);
+          
           game[newPos.$1][newPos.$2] = value;
           game[option.$1][option.$2] = 0;
-        });
+          
+          tilesByPosition["${newPos.$1}-${newPos.$2}"] = movingTile.copyWith(
+            row: newPos.$1,
+            col: newPos.$2,
+          );
+        } else {
+          game[newPos.$1][newPos.$2] = value;
+          game[option.$1][option.$2] = 0;
+        }
       }
     }
     
     options = getOptionsWhereNotNull();
     if (direction == SwipeDirection.right) {
-      options.sort((a, b) => b.$1.compareTo(a.$1));
-    } else if (direction == SwipeDirection.down) {
       options.sort((a, b) => b.$2.compareTo(a.$2));
+    } else if (direction == SwipeDirection.down) {
+      options.sort((a, b) => b.$1.compareTo(a.$1));
     } else if (direction == SwipeDirection.left) {
-      options.sort((a, b) => a.$1.compareTo(b.$1));
-    } else if (direction == SwipeDirection.up) {
       options.sort((a, b) => a.$2.compareTo(b.$2));
+    } else if (direction == SwipeDirection.up) {
+      options.sort((a, b) => a.$1.compareTo(b.$1));
     }
     
     for (var option in options) {
@@ -273,31 +360,45 @@ class _GamePageState extends State<GamePage> {
       
       (int, int)? mergeTarget = _findMergeTarget(option, direction, merged);
       if (mergeTarget != null) {
-        setState(() {
-          int mergedValue = value * 2;
-          game[mergeTarget.$1][mergeTarget.$2] = mergedValue;
-          game[option.$1][option.$2] = 0;
-          merged[mergeTarget.$1][mergeTarget.$2] = true;
+        int mergedValue = value * 2;
+        
+        String srcPosKey = "${option.$1}-${option.$2}";
+        String targetPosKey = "${mergeTarget.$1}-${mergeTarget.$2}";
+        
+        TileModel? sourceTile = tilesByPosition[srcPosKey];
+        TileModel? targetTile = tilesByPosition[targetPosKey];
+        
+        if (sourceTile != null && targetTile != null) {
+          tilesByPosition[targetPosKey] = targetTile.copyWith(
+            value: mergedValue,
+            isNew: false,
+          );
           
-          currentScore += mergedValue;
-          
-          if (currentScore > highScore) {
-            highScore = currentScore;
-            prefs.setInt("highScore", currentScore);
-          }
-        });
+          tilesByPosition.remove(srcPosKey);
+        }
+        
+        game[mergeTarget.$1][mergeTarget.$2] = mergedValue;
+        game[option.$1][option.$2] = 0;
+        merged[mergeTarget.$1][mergeTarget.$2] = true;
+        
+        currentScore += mergedValue;
+        
+        if (currentScore > highScore) {
+          highScore = currentScore;
+          prefs.setInt("highScore", currentScore);
+        }
       }
     }
     
     options = getOptionsWhereNotNull();
     if (direction == SwipeDirection.right) {
-      options.sort((a, b) => b.$1.compareTo(a.$1));
-    } else if (direction == SwipeDirection.down) {
       options.sort((a, b) => b.$2.compareTo(a.$2));
+    } else if (direction == SwipeDirection.down) {
+      options.sort((a, b) => b.$1.compareTo(a.$1));
     } else if (direction == SwipeDirection.left) {
-      options.sort((a, b) => a.$1.compareTo(b.$1));
-    } else if (direction == SwipeDirection.up) {
       options.sort((a, b) => a.$2.compareTo(b.$2));
+    } else if (direction == SwipeDirection.up) {
+      options.sort((a, b) => a.$1.compareTo(b.$1));
     }
     
     for (var option in options) {
@@ -307,12 +408,31 @@ class _GamePageState extends State<GamePage> {
       (int, int) newPos = _moveBlockAsFarAsPossible(option, direction);
       
       if (newPos != option) {
-        setState(() {
+        String oldPosKey = "${option.$1}-${option.$2}";
+        if (tilesByPosition.containsKey(oldPosKey)) {
+
+          TileModel movingTile = tilesByPosition[oldPosKey]!;
+          tilesByPosition.remove(oldPosKey);
+          
           game[newPos.$1][newPos.$2] = value;
           game[option.$1][option.$2] = 0;
-        });
+          
+          tilesByPosition["${newPos.$1}-${newPos.$2}"] = movingTile.copyWith(
+            row: newPos.$1,
+            col: newPos.$2,
+          );
+        } else {
+          game[newPos.$1][newPos.$2] = value;
+          game[option.$1][option.$2] = 0;
+        }
       }
     }
+    
+    List<TileModel> updatedTiles = tilesByPosition.values.toList();
+    
+    setState(() {
+      tiles = updatedTiles;
+    });
   }
   
   (int, int) _moveBlockAsFarAsPossible((int, int) position, SwipeDirection direction) {
@@ -346,36 +466,20 @@ class _GamePageState extends State<GamePage> {
     int value = game[row][col];
     
     if (direction == SwipeDirection.left) {
-      for (int c = col - 1; c >= 0; c--) {
-        if (game[row][c] == value && !merged[row][c]) {
-          return (row, c);
-        } else if (game[row][c] != 0) {
-          break;
-        }
+      if (col > 0 && game[row][col - 1] == value && !merged[row][col - 1]) {
+        return (row, col - 1);
       }
     } else if (direction == SwipeDirection.right) {
-      for (int c = col + 1; c < game[0].length; c++) {
-        if (game[row][c] == value && !merged[row][c]) {
-          return (row, c);
-        } else if (game[row][c] != 0) {
-          break;
-        }
+      if (col < game[0].length - 1 && game[row][col + 1] == value && !merged[row][col + 1]) {
+        return (row, col + 1);
       }
     } else if (direction == SwipeDirection.up) {
-      for (int r = row - 1; r >= 0; r--) {
-        if (game[r][col] == value && !merged[r][col]) {
-          return (r, col);
-        } else if (game[r][col] != 0) {
-          break;
-        }
+      if (row > 0 && game[row - 1][col] == value && !merged[row - 1][col]) {
+        return (row - 1, col);
       }
     } else if (direction == SwipeDirection.down) {
-      for (int r = row + 1; r < game.length; r++) {
-        if (game[r][col] == value && !merged[r][col]) {
-          return (r, col);
-        } else if (game[r][col] != 0) {
-          break;
-        }
+      if (row < game.length - 1 && game[row + 1][col] == value && !merged[row + 1][col]) {
+        return (row + 1, col);
       }
     }
     

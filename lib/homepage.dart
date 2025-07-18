@@ -39,7 +39,7 @@ class _HomepageState extends State<Homepage> {
                   scale: 1.2,
                   child: Text("2024 - The Modern Edition"),
                   ),
-                (prefs.getInt('highScore') != null) ? Text("Welcome back") : Text("Welcome"),
+                (prefs.getInt('highScore') != null) ? Text("Welcome back!") : Text("Welcome!"),
                 ElevatedButton(
                 onPressed: () {
                   Navigator.push(context, MaterialPageRoute(builder: (_) => GamePage()));
