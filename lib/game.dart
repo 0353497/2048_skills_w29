@@ -1,8 +1,11 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:the_modern_edition_2048/components/game_over_dialog.dart';
 import 'package:the_modern_edition_2048/components/score_container.dart';
 import 'package:the_modern_edition_2048/homepage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum SwipeDirection {
   up,
@@ -12,8 +15,8 @@ enum SwipeDirection {
 }
 
 class GamePage extends StatefulWidget {
-  const GamePage({super.key});
-
+  const GamePage({super.key, this.isLastGame = false});
+  final bool isLastGame;
   @override
   State<GamePage> createState() => _GamePageState();
 }
@@ -26,24 +29,28 @@ class _GamePageState extends State<GamePage> {
     [0, 0, 0, 0],
     [0, 0, 0, 0]
   ];
-  final List<List<List<int>>> gameStates = [];
+  List<List<List<int>>> gameStates = [];
   bool isGameOver = false;
   int currentScore = 0;
   int highScore = 0;
 
   final Duration _debounceTime = Duration(milliseconds: 400);
   bool _isProcessingSwipe = false;
+  late SharedPreferences prefs;
 
   @override
   void initState() {
     super.initState();
     addBlock();
+    setup();
+    if (widget.isLastGame) setupLastGame();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Row(
           spacing: 20,
           mainAxisAlignment: MainAxisAlignment.center,
@@ -147,6 +154,13 @@ class _GamePageState extends State<GamePage> {
 
   void swipe(SwipeDirection direction) {
     debugPrint("called swipe!");
+    setState(() {
+      List<List<int>> gameCopy = List.generate(
+        game.length, 
+        (i) => List.from(game[i])
+      );
+      gameStates.add(gameCopy);
+    });
     calculateNewPositions(direction);
     addBlock();
   }
@@ -157,6 +171,12 @@ class _GamePageState extends State<GamePage> {
     if (options.isEmpty) {
       setState(() {
         isGameOver = true;
+        showDialog(context: context,
+        builder: (_)
+        => GameOverDialog(currentScore: currentScore, highScore: highScore, undo: undo),
+        barrierDismissible: false,
+
+        );
       });
       return;
     }
@@ -173,12 +193,6 @@ class _GamePageState extends State<GamePage> {
     final (int, int) placeToAddNumber = options[randomIndex];
 
     setState(() {
-      List<List<int>> gameCopy = List.generate(
-        game.length, 
-        (i) => List.from(game[i])
-      );
-      gameStates.add(gameCopy);
-      
       game[placeToAddNumber.$1][placeToAddNumber.$2] = numberToAdd;
     });
   }
@@ -269,6 +283,7 @@ class _GamePageState extends State<GamePage> {
           
           if (currentScore > highScore) {
             highScore = currentScore;
+            prefs.setInt("highScore", currentScore);
           }
         });
       }
@@ -368,6 +383,60 @@ class _GamePageState extends State<GamePage> {
   }
   
   void pause() {
+    prefs.setString("lastGame", jsonEncode(gameStates));
     Navigator.push(context, MaterialPageRoute(builder: (_) => Homepage()));
+  }
+  
+  Future<void> setup() async{
+    prefs = await SharedPreferences.getInstance();
+    int? score = prefs.getInt("highScore");
+    score == null ? highScore = 0 : highScore = score;
+  }
+  
+  void setupLastGame() async {
+    prefs = await SharedPreferences.getInstance();
+    
+    final String? lastGameJson = prefs.getString("lastGame");
+    if (lastGameJson != null) {
+      try {
+        final dynamic decodedData = jsonDecode(lastGameJson);
+        if (decodedData is List) {
+          List<List<List<int>>> savedGameStates = [];
+          
+          for (var gameState in decodedData) {
+            if (gameState is List) {
+              List<List<int>> boardState = [];
+              
+              for (var row in gameState) {
+                if (row is List) {
+                  List<int> boardRow = [];
+                  
+                  for (var cell in row) {
+                    boardRow.add(cell is int ? cell : 0);
+                  }
+                  
+                  boardState.add(boardRow);
+                }
+              }
+              
+              if (boardState.isNotEmpty) {
+                savedGameStates.add(boardState);
+              }
+            }
+          }
+          
+          if (savedGameStates.isNotEmpty) {
+            setState(() {
+              gameStates = savedGameStates;
+              game = savedGameStates.last;
+              
+              prefs.remove("lastGame");
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint("Error loading saved game: $e");
+      }
+    }
   }
 }
