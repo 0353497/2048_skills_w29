@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:the_modern_edition_2048/components/game_background.dart';
 import 'package:the_modern_edition_2048/components/game_over_dialog.dart';
+import 'package:the_modern_edition_2048/components/instructions_dialog.dart';
 import 'package:the_modern_edition_2048/components/score_container.dart';
 import 'package:the_modern_edition_2048/homepage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -92,7 +93,9 @@ class _GamePageState extends State<GamePage> {
     double gridWidth = gridSize * cellSize + (gridSize + 1) * cellSpacing;
     
     return Scaffold(
+      backgroundColor: Color(0xffe1ccb7),
       appBar: AppBar(
+        backgroundColor: Color(0xffe1ccb7),
         automaticallyImplyLeading: false,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -105,16 +108,28 @@ class _GamePageState extends State<GamePage> {
         actions: [
           SizedBox(
             width: 100,
-            child: ElevatedButton(
-              onPressed: () => undo(),
-              child: Text("undo"),
+            child: ElevatedButton.icon(
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(Color(0xffd86a54)),
+                foregroundColor: WidgetStatePropertyAll(Colors.white)
               ),
+              onPressed: () => undo(),
+              icon: Icon(Icons.undo),
+              label: Text("undo", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),),
+              ),
+          ),
+          SizedBox(
+            width: 5,
           ),
            SizedBox(
             width: 100,
             child: ElevatedButton(
+                style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(Color(0xffd86a54)),
+                foregroundColor: WidgetStatePropertyAll(Colors.white)
+              ),
               onPressed: () => pause(),
-              child: Text("pauze"),
+              child: Text("pauze", style: TextStyle(fontWeight: FontWeight.w500, fontSize: 12),),
               ),
           )
         ],
@@ -139,8 +154,9 @@ class _GamePageState extends State<GamePage> {
           if (rndValue == 2) _handleSwipe(SwipeDirection.right);
           if (rndValue == 3) _handleSwipe(SwipeDirection.left);
         },
-        child: SizedBox.expand(
-          child: SafeArea(
+        child: SafeArea(
+          child: Container(
+            color: Colors.transparent,
             child: Center(
               child: SizedBox(
                 width: gridWidth,
@@ -495,6 +511,7 @@ class _GamePageState extends State<GamePage> {
     prefs = await SharedPreferences.getInstance();
     int? score = prefs.getInt("highScore");
     score == null ? highScore = 0 : highScore = score;
+    if (score == null && mounted) showDialog(context: context, builder: (_) => InstructionsDialog(), barrierDismissible: false);
   }
   
   void setupLastGame() async {
