@@ -32,6 +32,7 @@ class _GamePageState extends State<GamePage> {
   bool isGameOver = false;
   int currentScore = 0;
   int highScore = 0;
+  int _oldHighscore = 0;
 
   final int gridSize = 4;
   final double cellSize = 70.0;
@@ -251,7 +252,7 @@ class _GamePageState extends State<GamePage> {
         isGameOver = true;
         showDialog(context: context,
         builder: (_)
-        => GameOverDialog(currentScore: currentScore, highScore: highScore, undo: undo),
+        => GameOverDialog(currentScore: currentScore, highScore: highScore, undo: undo,oldHighscore: _oldHighscore,),
         barrierDismissible: false,
         );
       });
@@ -512,6 +513,7 @@ class _GamePageState extends State<GamePage> {
     prefs = await SharedPreferences.getInstance();
     int? score = prefs.getInt("highScore");
     score == null ? highScore = 0 : highScore = score;
+    score == null ? _oldHighscore = 0  : _oldHighscore = score;
     if (score == null && mounted) showDialog(context: context, builder: (_) => InstructionsDialog(), barrierDismissible: false);
   }
   
