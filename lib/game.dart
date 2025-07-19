@@ -44,7 +44,7 @@ class _GamePageState extends State<GamePage> {
   @override
   void initState() {
     super.initState();
-    addBlock();
+   if (!widget.isLastGame) addBlock();
     setup();
     if (widget.isLastGame) setupLastGame();
   }
@@ -502,9 +502,10 @@ class _GamePageState extends State<GamePage> {
     return null;
   }
   
-  void pause() {
-    prefs.setString("lastGame", jsonEncode(gameStates));
-    Navigator.push(context, MaterialPageRoute(builder: (_) => Homepage()));
+  void pause() async {
+    gameStates.add(game);
+    await prefs.setString("lastGame", jsonEncode(gameStates));
+    if (mounted) Navigator.push(context, MaterialPageRoute(builder: (_) => Homepage()));
   }
   
   Future<void> setup() async{
@@ -550,9 +551,9 @@ class _GamePageState extends State<GamePage> {
             setState(() {
               gameStates = savedGameStates;
               game = savedGameStates.last;
-              
-              prefs.remove("lastGame");
             });
+            _updateTilesList();
+            prefs.remove("lastGame");
           }
         }
       } catch (e) {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:math';
 
 import 'package:the_modern_edition_2048/components/game_background.dart';
 import 'package:the_modern_edition_2048/components/score_container.dart';
@@ -712,7 +711,7 @@ class _MergeDemonstrationState extends State<MergeDemonstration> with SingleTick
 }
 
 class Intro3 extends StatefulWidget {
-  const Intro3({Key? key}) : super(key: key);
+  const Intro3({super.key});
 
   @override
   State<Intro3> createState() => _Intro3State();
@@ -792,16 +791,6 @@ class _Intro3State extends State<Intro3> with SingleTickerProviderStateMixin {
     });
   }
   
-  Offset _calculatePosition(int row, int col) {
-    const double cellSize = 58;
-    const double cellSpacing = 15;
-    
-    return Offset(
-      col * cellSize + (col + 1) * cellSpacing,
-      row * cellSize + (row + 1) * cellSpacing,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Center(
