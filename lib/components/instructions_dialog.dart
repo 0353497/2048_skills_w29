@@ -71,35 +71,29 @@ class _MergeComponentState extends State<MergeComponent> with SingleTickerProvid
   
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      left: widget.position.dx,
-      top: widget.position.dy,
-      width: widget.cellSize,
-      height: widget.cellSize,
-      child: SizedBox(
-        width: 55,
-        height: 55,
-        child: AnimatedBuilder(
-          animation: _scaleAnimation,
-          builder: (context, child) {
-            return Transform.scale(
-              scale: _scaleAnimation.value,
-              child: child,
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: ColorHandler.getColorFromValue(widget.score),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Center(
-              child: Text(
-                widget.score.toString(),
-                style: TextStyle(
-                  fontSize: widget.score > 100 ? 22 : 28,
-                  fontWeight: FontWeight.bold,
-                  color: ColorHandler.getTextColorFromValue(widget.score),
-                ),
+    return SizedBox(
+      width: 55,
+      height: 55,
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: ColorHandler.getColorFromValue(widget.score),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(
+              widget.score.toString(),
+              style: TextStyle(
+                fontSize: widget.score > 100 ? 22 : 28,
+                fontWeight: FontWeight.bold,
+                color: ColorHandler.getTextColorFromValue(widget.score),
               ),
             ),
           ),
@@ -274,13 +268,22 @@ class Intro1 extends StatelessWidget {
                               return Transform.translate(
                                 offset: (offset * 2.15),
                                 child: SizedBox(
-                                  width: 55,
+                                  width: 56,
                                   height: 55,
-                                  child: ScoreContainer(
-                                    score: 16,
-                                    position: const Offset(55, 55),
-                                    cellSize: 48,
-                                    isNew: false,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: Color(0xffd86a54),
+                                      borderRadius: BorderRadius.circular(8)
+                                    ),
+                                    child: Center(
+                                      child: Text("16",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               );
@@ -438,7 +441,7 @@ class MergeIntro extends StatelessWidget {
 }
 
 class Intro2 extends StatefulWidget {
-  const Intro2({Key? key}) : super(key: key);
+  const Intro2({super.key});
 
   @override
   State<Intro2> createState() => _Intro2State();
@@ -519,30 +522,36 @@ class _Intro2State extends State<Intro2> with SingleTickerProviderStateMixin {
       alignment: Alignment.center,
       children: [
         Positioned(
-          left: 17,
+          left: 28,
           top: 65,
           child: SizedBox(
             width: 55,
             height: 55,
-            child: ScoreContainer(
-              score: 8,
-              position: const Offset(0, 0),
-              cellSize: 48,
-              isNew: false,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Color(0xffdfad7a),
+                borderRadius: BorderRadius.circular(8)
+              ),
+             child: Center(
+              child: Text("8", style: TextStyle(color: Color(0xff777777), fontSize: 28, fontWeight: FontWeight.bold),),
+             ),
             ),
           ),
         ),
         Positioned(
-          left: 89,
+          left: 98,
           top: 65,
           child: SizedBox(
             height: 55,
             width: 55,
-            child: ScoreContainer(
-              score: 8,
-              position: const Offset(0, 0),
-              cellSize: 48,
-              isNew: false,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Color(0xffdfad7a),
+                borderRadius: BorderRadius.circular(8)
+              ),
+             child: Center(
+              child: Text("8", style: TextStyle(color: Color(0xff777777), fontSize: 28, fontWeight: FontWeight.bold),),
+             ),
             ),
           ),
         ),
@@ -622,32 +631,38 @@ class _MergeDemonstrationState extends State<MergeDemonstration> with SingleTick
       children: [
         if (!showMerge && !showFinalTile) ...[
           Positioned(
-            left: 17,
+            left: 28,
             top: 65,
             child: SizedBox(
               width: 55,
               height: 55,
-              child: ScoreContainer(
-                score: 8,
-                position: const Offset(0, 0),
-                cellSize: 48,
-                isNew: false,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Color(0xffdfad7a),
+                    borderRadius: BorderRadius.circular(8)
+                  ),
+                child: Center(
+                  child: Text("8", style: TextStyle(color: Color(0xff777777), fontSize: 28, fontWeight: FontWeight.bold),),
+                ),
               ),
             ),
           ),
           Positioned(
-            left: 89,
+            left: 98,
             top: 65,
             child: SlideTransition(
               position: _rightTileAnimation,
               child: SizedBox(
                 width: 55,
                 height: 55,
-                child: ScoreContainer(
-                  score: 8,
-                  position: const Offset(0, 0),
-                  cellSize: 48,
-                  isNew: false,
+                child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xffdfad7a),
+                      borderRadius: BorderRadius.circular(8)
+                    ),
+                  child: Center(
+                    child: Text("8", style: TextStyle(color: Color(0xff777777), fontSize: 28, fontWeight: FontWeight.bold),),
+                  ),
                 ),
               ),
             ),
@@ -656,7 +671,7 @@ class _MergeDemonstrationState extends State<MergeDemonstration> with SingleTick
         
         if (showMerge)
           Positioned(
-            left: 17,
+            left: 27,
             top: 65,
             child: MergeComponent(
               score: 16,
@@ -675,17 +690,20 @@ class _MergeDemonstrationState extends State<MergeDemonstration> with SingleTick
           
         if (showFinalTile)
           Positioned(
-            left: 17,
+            left: 27,
             top: 65,
             child: SizedBox(
               width: 55,
               height: 55,
-              child: ScoreContainer(
-                score: 16,
-                position: const Offset(0, 0),
-                cellSize: 48,
-                isNew: false,
+              child: Container(
+              decoration: BoxDecoration(
+                color: Color(0xffd86a54),
+                borderRadius: BorderRadius.circular(8)
               ),
+             child: Center(
+              child: Text("16", style: TextStyle(color: Color(0xffffffff), fontSize: 28, fontWeight: FontWeight.bold),),
+             ),
+            ),
             ),
           ),
       ],
@@ -705,10 +723,6 @@ class _Intro3State extends State<Intro3> with SingleTickerProviderStateMixin {
   bool _showNewTile = false;
   late AnimationController _swipeController;
   late Animation<Offset> _tileAnimation;
-  
-  int _newTileValue = 2;
-  final int _newTileRow = 2;
-  final int _newTileCol = 3;
 
   @override
   void initState() {
@@ -719,7 +733,6 @@ class _Intro3State extends State<Intro3> with SingleTickerProviderStateMixin {
   }
   
   void _determineNewTileValue() {
-    _newTileValue = (Random().nextInt(10) == 0) ? 4 : 2;
   }
   
   void _initAnimations() {
@@ -791,8 +804,6 @@ class _Intro3State extends State<Intro3> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final Offset tilePosition = _calculatePosition(1, 1);
-    
     return Center(
       child: SizedBox(
         width: 400,
@@ -809,35 +820,33 @@ class _Intro3State extends State<Intro3> with SingleTickerProviderStateMixin {
             if (_isSwipeAnimating)
               SlideTransition(
                 position: _tileAnimation,
-                child: Positioned(
-                  left: tilePosition.dx,
-                  top: tilePosition.dy,
-                  child: SizedBox(
-                    width: 55,
-                    height: 55,
-                    child: ScoreContainer(
-                      score: 8,
-                      position: Offset.zero,
-                      cellSize: 48,
-                      isNew: false,
+                child: SizedBox(
+                  width: 55,
+                  height: 55,
+                  child:  Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xffdfad7a),
+                      borderRadius: BorderRadius.circular(8)
                     ),
+                  child: Center(
+                    child: Text("8", style: TextStyle(color: Color(0xff777777), fontSize: 28, fontWeight: FontWeight.bold),),
+                  ),
                   ),
                 ),
               ),
             
             if (_showNewTile)
               Positioned(
-                left: 88,
+                left: 97,
                 top: 135,
                 child: SizedBox(
                   width: 55,
                   height: 55,
-                  child: ScoreContainer(
-                    score: _newTileValue,
+                  child: MergeComponent(
+                    score: 2,
                     position: Offset.zero,
-                    cellSize: 48,
-                    isNew: true,
-                  ),
+                    cellSize: 55,
+                    onMergeComplete: (){})
                 ),
               ),
             
